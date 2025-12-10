@@ -20,16 +20,22 @@ class ::IpAnonymizerMiddleware
   end
   
   def call(env)
+    # Anonymize forwarded IP first (from proxy/nginx)
+    if env['HTTP_X_FORWARDED_FOR']
+      real_forwarded_ip = env['HTTP_X_FORWARDED_FOR'].split(',').first.strip
+      anonymized_forwarded = anonymize_ip(real_forwarded_ip)
+      env['HTTP_X_FORWARDED_FOR'] = anonymized_forwarded
+      Rails.logger.warn "FORWARDED - BEFORE: #{real_forwarded_ip}, AFTER: #{anonymized_forwarded}"
+    end
+    
+    # Anonymize REMOTE_ADDR
     real_ip = env['REMOTE_ADDR']
-    Rails.logger.warn "BEFORE: Real IP = #{real_ip}"
+    Rails.logger.warn "REMOTE_ADDR - BEFORE: #{real_ip}"
     
     anonymized_ip = anonymize_ip(real_ip)
-    # env['REMOTE_ADDR'] = anonymized_ip
     env['action_dispatch.remote_ip'] = anonymized_ip
     
-    Rails.logger.warn "AFTER: Anonymized IP = #{anonymized_ip}"
-
-    Rails.logger.warn "SET action_dispatch.remote_ip = #{env['action_dispatch.remote_ip']}"
+    Rails.logger.warn "REMOTE_ADDR - AFTER: #{anonymized_ip}"
     
     @app.call(env)
   end
