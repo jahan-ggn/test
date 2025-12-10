@@ -18,19 +18,19 @@ module ::DiscourseIpAnonymizer
     ip_parts = hex_parts.map { |hex| hex.to_i(16) }
     ip_parts.join('.')
   end
-end
-
-require_relative "lib/discourse_ip_anonymizer/engine"
-
-after_initialize do
-  ActionDispatch::Request.class_eval do
-    alias_method :original_ip, :ip
-    
+  
+  module RequestIpPatch
     def ip
-      real_ip = original_ip
+      real_ip = super
       anonymized = ::DiscourseIpAnonymizer.anonymize_ip(real_ip)
       Rails.logger.warn "IP ANONYMIZED: #{real_ip} -> #{anonymized}"
       anonymized
     end
   end
+end
+
+require_relative "lib/discourse_ip_anonymizer/engine"
+
+after_initialize do
+  ActionDispatch::Request.prepend(::DiscourseIpAnonymizer::RequestIpPatch)
 end
