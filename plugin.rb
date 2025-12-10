@@ -14,30 +14,54 @@ end
 
 require_relative "lib/discourse_ip_anonymizer/engine"
 
+class ::AnonymizedIpWrapper
+  def initialize(original_ip, anonymized_ip)
+    @original_ip = original_ip
+    @anonymized_ip = anonymized_ip
+  end
+  
+  def to_s
+    @anonymized_ip
+  end
+  
+  def to_str
+    @anonymized_ip
+  end
+  
+  def inspect
+    @anonymized_ip
+  end
+  
+  def method_missing(method, *args, &block)
+    @anonymized_ip.send(method, *args, &block)
+  end
+  
+  def respond_to_missing?(method, include_private = false)
+    @anonymized_ip.respond_to?(method, include_private) || super
+  end
+end
+
 class ::IpAnonymizerMiddleware
   def initialize(app)
     @app = app
   end
   
   def call(env)
-    # Anonymize forwarded IP first (from proxy/nginx)
-    if env['HTTP_X_FORWARDED_FOR']
-      real_forwarded_ip = env['HTTP_X_FORWARDED_FOR'].split(',').first.strip
-      anonymized_forwarded = anonymize_ip(real_forwarded_ip)
-      env['HTTP_X_FORWARDED_FOR'] = anonymized_forwarded
-      Rails.logger.warn "FORWARDED - BEFORE: #{real_forwarded_ip}, AFTER: #{anonymized_forwarded}"
+    # Let all middleware run first (including ActionDispatch::RemoteIp)
+    status, headers, body = @app.call(env)
+    
+    # Now anonymize the IP that was calculated
+    if env['action_dispatch.remote_ip']
+      original_ip = env['action_dispatch.remote_ip'].to_s
+      anonymized_ip = anonymize_ip(original_ip)
+      
+      Rails.logger.warn "IP ANONYMIZATION: #{original_ip} -> #{anonymized_ip}"
+      
+      # Wrap it so it behaves like the original object
+      env['action_dispatch.remote_ip'] = ::AnonymizedIpWrapper.new(original_ip, anonymized_ip)
     end
     
-    # Anonymize REMOTE_ADDR
-    real_ip = env['REMOTE_ADDR']
-    Rails.logger.warn "REMOTE_ADDR - BEFORE: #{real_ip}"
-    
-    anonymized_ip = anonymize_ip(real_ip)
-    env['action_dispatch.remote_ip'] = anonymized_ip
-    
-    Rails.logger.warn "REMOTE_ADDR - AFTER: #{anonymized_ip}"
-    
-    @app.call(env)
+    [status, headers, body]
   end
   
   private
