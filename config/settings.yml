@@ -2,3 +2,7 @@ discourse_ip_anonymizer:
   discourse_ip_anonymizer_enabled:
     default: false
     client: true
+  ip_anonymizer_secret_key:
+    client: true
+    default: ""
+    type: text
