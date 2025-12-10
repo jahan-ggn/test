@@ -21,15 +21,15 @@ class ::IpAnonymizerMiddleware
   
   def call(env)
     real_ip = env['REMOTE_ADDR']
-    puts "BEFORE: Real IP = #{real_ip}"
+    Rails.logger.warn "BEFORE: Real IP = #{real_ip}"
     
     anonymized_ip = anonymize_ip(real_ip)
     # env['REMOTE_ADDR'] = anonymized_ip
     env['action_dispatch.remote_ip'] = anonymized_ip
     
-    puts "AFTER: Anonymized IP = #{anonymized_ip}"
+    Rails.logger.warn "AFTER: Anonymized IP = #{anonymized_ip}"
 
-    puts "SET action_dispatch.remote_ip = #{env['action_dispatch.remote_ip']}"
+    Rails.logger.warn "SET action_dispatch.remote_ip = #{env['action_dispatch.remote_ip']}"
     
     @app.call(env)
   end
