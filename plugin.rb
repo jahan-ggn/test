@@ -25,9 +25,9 @@ module ::DiscourseIpAnonymizer
       return super unless SiteSetting.discourse_ip_anonymizer_enabled
       
       real_ip = super
-      Rails.logger.info "[IP-ANON] Before: #{real_ip}"
+      Rails.logger.warn "[IP-ANON] Before: #{real_ip}"
       anonymized = ::DiscourseIpAnonymizer.anonymize_ip(real_ip)
-      Rails.logger.info "[IP-ANON] After: #{anonymized}"
+      Rails.logger.warn "[IP-ANON] After: #{anonymized}"
       anonymized
     end
   end
@@ -37,9 +37,9 @@ module ::DiscourseIpAnonymizer
       return super unless SiteSetting.discourse_ip_anonymizer_enabled
       
       real_ip = super
-      Rails.logger.info "[IP-ANON] Before: #{real_ip}"
+      Rails.logger.warn "[IP-ANON] Before: #{real_ip}"
       anonymized = ::DiscourseIpAnonymizer.anonymize_ip(real_ip.to_s)
-      Rails.logger.info "[IP-ANON] After: #{anonymized}"
+      Rails.logger.warn "[IP-ANON] After: #{anonymized}"
       anonymized
     end
   end
